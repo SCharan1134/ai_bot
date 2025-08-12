@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bobst AI Assistant - Local</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .chat-container {
+        width: 90%;
+        max-width: 800px;
+        height: 80vh;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .chat-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .chat-header h1 {
+        font-size: 24px;
+        margin-bottom: 5px;
+      }
+
+      .chat-header p {
+        opacity: 0.9;
+        font-size: 14px;
+      }
+
+      .status-indicator {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #4caf50;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
+      .chat-messages {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+        background: #f8f9fa;
+      }
+
+      .message {
+        margin-bottom: 20px;
+        display: flex;
+        align-items: flex-start;
+        animation: fadeIn 0.3s ease-in;
+      }
+
+      .message.user {
+        justify-content: flex-end;
+      }
+
+      .message-content {
+        max-width: 70%;
+        padding: 15px 20px;
+        border-radius: 20px;
+        word-wrap: break-word;
+        line-height: 1.4;
+      }
+
+      .message.bot .message-content {
+        background: white;
+        color: #333;
+        border: 1px solid #e0e0e0;
+        border-bottom-left-radius: 5px;
+      }
+
+      .message.user .message-content {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-bottom-right-radius: 5px;
+      }
+
+      .message-time {
+        font-size: 11px;
+        opacity: 0.6;
+        margin-top: 5px;
+      }
+
+      .chat-input-container {
+        padding: 20px;
+        background: white;
+        border-top: 1px solid #e0e0e0;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .chat-input {
+        flex: 1;
+        padding: 15px 20px;
+        border: 2px solid #e0e0e0;
+        border-radius: 25px;
+        font-size: 16px;
+        outline: none;
+        transition: all 0.3s ease;
+      }
+
+      .chat-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      .send-button {
+        padding: 15px 25px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        min-width: 100px;
+      }
+
+      .send-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+      }
+
+      .send-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .typing-indicator {
+        display: none;
+        padding: 15px 20px;
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 20px;
+        border-bottom-left-radius: 5px;
+        max-width: 70%;
+      }
+
+      .typing-dots {
+        display: flex;
+        gap: 5px;
+      }
+
+      .typing-dots span {
+        width: 8px;
+        height: 8px;
+        background: #667eea;
+        border-radius: 50%;
+        animation: typing 1.4s infinite ease-in-out;
+      }
+
+      .typing-dots span:nth-child(1) {
+        animation-delay: -0.32s;
+      }
+      .typing-dots span:nth-child(2) {
+        animation-delay: -0.16s;
+      }
+
+      .welcome-message {
+        text-align: center;
+        padding: 40px 20px;
+        color: #666;
+      }
+
+      .welcome-message h2 {
+        color: #333;
+        margin-bottom: 15px;
+      }
+
+      .quick-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 20px;
+      }
+
+      .quick-action {
+        padding: 8px 16px;
+        background: #f0f0f0;
+        border: 1px solid #ddd;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.3s ease;
+      }
+
+      .quick-action:hover {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+      }
+
+      .error-message {
+        background: #ffebee;
+        color: #c62828;
+        padding: 10px 15px;
+        border-radius: 10px;
+        margin: 10px;
+        border-left: 4px solid #c62828;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes typing {
+        0%,
+        80%,
+        100% {
+          transform: scale(0);
+        }
+        40% {
+          transform: scale(1);
+        }
+      }
+
+      /* Mobile responsive */
+      @media (max-width: 768px) {
+        .chat-container {
+          width: 95%;
+          height: 90vh;
+          border-radius: 15px;
+        }
+
+        .message-content {
+          max-width: 85%;
+        }
+
+        .chat-input-container {
+          padding: 15px;
+        }
+
+        .quick-actions {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chat-container">
+      <div class="chat-header">
+        <div class="status-indicator">
+          <div class="status-dot"></div>
+          <span>Local Server</span>
+        </div>
+        <h1>🤖 Bobst AI Assistant</h1>
+        <p>Your intelligent machine support companion (Running Locally)</p>
+      </div>
+
+      <div class="chat-messages" id="chatMessages">
+        <div class="welcome-message">
+          <h2>Welcome to Bobst AI Assistant!</h2>
+          <p>
+            I can help you with error codes, spare parts, and maintenance
+            information for your Bobst machines.
+          </p>
+          <p><strong>Running locally on your machine</strong></p>
+
+          <div class="quick-actions">
+            <div
+              class="quick-action"
+              onclick="sendQuickMessage('What does error E-352 mean on MASTERFOLD?')"
+            >
+              Error Code Lookup
+            </div>
+            <div
+              class="quick-action"
+              onclick="sendQuickMessage('Need folding blade for NOVACUT')"
+            >
+              Spare Parts Search
+            </div>
+            <div
+              class="quick-action"
+              onclick="sendQuickMessage('When is next maintenance for MASTERFOLD?')"
+            >
+              Maintenance Schedule
+            </div>
+            <div
+              class="quick-action"
+              onclick="sendQuickMessage('Help me troubleshoot my machine')"
+            >
+              General Help
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="typing-indicator" id="typingIndicator">
+        <div class="typing-dots">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+
+      <div class="chat-input-container">
+        <input
+          type="text"
+          class="chat-input"
+          id="messageInput"
+          placeholder="Ask about error codes, spare parts, or maintenance..."
+          onkeypress="handleKeyPress(event)"
+        />
+        <button class="send-button" id="sendButton" onclick="sendMessage()">
+          Send
+        </button>
+      </div>
+    </div>
+
+    <script>
+      // Configuration for local Flask server
+      const API_BASE_URL = "http://localhost:5000";
+
+      let isWaiting = false;
+
+      function handleKeyPress(event) {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          sendMessage();
+        }
+      }
+
+      function sendQuickMessage(message) {
+        document.getElementById("messageInput").value = message;
+        sendMessage();
+      }
+
+      async function sendMessage() {
+        const messageInput = document.getElementById("messageInput");
+        const sendButton = document.getElementById("sendButton");
+        const message = messageInput.value.trim();
+
+        if (!message || isWaiting) return;
+
+        // Clear welcome message on first interaction
+        const welcomeMessage = document.querySelector(".welcome-message");
+        if (welcomeMessage) {
+          welcomeMessage.remove();
+        }
+
+        // Add user message
+        addMessage(message, "user");
+
+        // Clear input and disable button
+        messageInput.value = "";
+        sendButton.disabled = true;
+        sendButton.textContent = "Sending...";
+        isWaiting = true;
+
+        // Show typing indicator
+        showTypingIndicator();
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/chat`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ message: message }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          // Hide typing indicator
+          hideTypingIndicator();
+
+          // Add bot response
+          addMessage(
+            data.reply || "Sorry, I encountered an error. Please try again.",
+            "bot"
+          );
+        } catch (error) {
+          console.error("Error:", error);
+          hideTypingIndicator();
+
+          if (error.message.includes("Failed to fetch")) {
+            addMessage(
+              "❌ Cannot connect to the local server. Please make sure the Flask app is running on http://localhost:5000",
+              "bot"
+            );
+          } else {
+            addMessage(
+              "❌ Sorry, I encountered an error. Please check if the server is running and try again.",
+              "bot"
+            );
+          }
+        } finally {
+          // Re-enable button
+          sendButton.disabled = false;
+          sendButton.textContent = "Send";
+          isWaiting = false;
+          messageInput.focus();
+        }
+      }
+
+      function addMessage(content, sender) {
+        const messagesContainer = document.getElementById("chatMessages");
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message ${sender}`;
+
+        const now = new Date();
+        const timeString = now.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        messageDiv.innerHTML = `
+                <div class="message-content">
+                    ${formatMessage(content)}
+                    <div class="message-time">${timeString}</div>
+                </div>
+            `;
+
+        messagesContainer.appendChild(messageDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+
+      function formatMessage(content) {
+        // Convert markdown-like formatting to HTML
+        return content
+          .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+          .replace(/\*(.*?)\*/g, "<em>$1</em>")
+          .replace(/\n/g, "<br>")
+          .replace(
+            /🔧|⚙️|📅|🤖|❌/g,
+            '<span style="font-size: 1.2em;">$&</span>'
+          );
+      }
+
+      function showTypingIndicator() {
+        const typingIndicator = document.getElementById("typingIndicator");
+        const messagesContainer = document.getElementById("chatMessages");
+        typingIndicator.style.display = "block";
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+
+      function hideTypingIndicator() {
+        const typingIndicator = document.getElementById("typingIndicator");
+        typingIndicator.style.display = "none";
+      }
+
+      // Check server health on load
+      async function checkServerHealth() {
+        try {
+          const response = await fetch(`${API_BASE_URL}/health`);
+          const data = await response.json();
+          console.log("Server status:", data.status);
+        } catch (error) {
+          console.warn("Server health check failed:", error);
+          const messagesContainer = document.getElementById("chatMessages");
+          const errorDiv = document.createElement("div");
+          errorDiv.className = "error-message";
+          errorDiv.innerHTML =
+            "⚠️ Server not responding. Please make sure the Flask app is running on http://localhost:5000";
+          messagesContainer.appendChild(errorDiv);
+        }
+      }
+
+      // Focus input on load and check server
+      window.addEventListener("load", () => {
+        document.getElementById("messageInput").focus();
+        checkServerHealth();
+      });
+    </script>
+  </body>
+</html>

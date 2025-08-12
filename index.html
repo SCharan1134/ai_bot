@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Technical Support Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+      }
+      /* Custom scrollbar for a cleaner look */
+      #chat-window::-webkit-scrollbar {
+        width: 6px;
+      }
+      #chat-window::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+      #chat-window::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 3px;
+      }
+      #chat-window::-webkit-scrollbar-thumb:hover {
+        background: #555;
+      }
+      .chat-bubble {
+        max-width: 75%;
+        word-wrap: break-word;
+      }
+      .thinking-bubble {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .dot-flashing {
+        position: relative;
+        width: 10px;
+        height: 10px;
+        border-radius: 5px;
+        background-color: #4f46e5;
+        color: #4f46e5;
+        animation: dotFlashing 1s infinite linear alternate;
+        animation-delay: 0.5s;
+      }
+      .dot-flashing::before,
+      .dot-flashing::after {
+        content: "";
+        display: inline-block;
+        position: absolute;
+        top: 0;
+      }
+      .dot-flashing::before {
+        left: -15px;
+        width: 10px;
+        height: 10px;
+        border-radius: 5px;
+        background-color: #4f46e5;
+        color: #4f46e5;
+        animation: dotFlashing 1s infinite alternate;
+        animation-delay: 0s;
+      }
+      .dot-flashing::after {
+        left: 15px;
+        width: 10px;
+        height: 10px;
+        border-radius: 5px;
+        background-color: #4f46e5;
+        color: #4f46e5;
+        animation: dotFlashing 1s infinite alternate;
+        animation-delay: 1s;
+      }
+
+      @keyframes dotFlashing {
+        0% {
+          background-color: #4f46e5;
+        }
+        50%,
+        100% {
+          background-color: #bebebe;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 flex items-center justify-center h-screen">
+    <div
+      class="w-full max-w-2xl h-full md:h-[90vh] flex flex-col bg-white shadow-2xl rounded-lg"
+    >
+      <!-- Header -->
+      <header
+        class="bg-indigo-600 text-white p-4 rounded-t-lg flex items-center justify-between shadow-md"
+      >
+        <h1 class="text-xl font-bold">Technical Support Assistant</h1>
+        <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+      </header>
+
+      <!-- Chat Window -->
+      <div id="chat-window" class="flex-1 p-6 overflow-y-auto space-y-4">
+        <!-- Initial agent message -->
+        <div class="flex justify-start">
+          <div class="chat-bubble bg-gray-200 text-gray-800 p-3 rounded-lg">
+            <p>
+              Hello! How can I assist you with error codes or machine faults
+              today?
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input Area -->
+      <div class="p-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
+        <form id="chat-form" class="flex items-center space-x-4">
+          <input
+            type="text"
+            id="chat-input"
+            placeholder="Ask your technical question..."
+            autocomplete="off"
+            class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-200 disabled:bg-gray-200"
+          />
+          <button
+            type="submit"
+            id="send-button"
+            class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-200 disabled:bg-indigo-300 disabled:cursor-not-allowed"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 10l7-7m0 0l7 7m-7-7v18"
+              />
+            </svg>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      const chatWindow = document.getElementById("chat-window");
+      const chatForm = document.getElementById("chat-form");
+      const chatInput = document.getElementById("chat-input");
+      const sendButton = document.getElementById("send-button");
+
+      // The API endpoint for your FastAPI backend
+      const apiUrl = "http://127.0.0.1:8000/chat";
+
+      // Variable to store the conversation thread ID
+      let threadId = null;
+
+      // --- Event Listener for Form Submission ---
+      chatForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const question = chatInput.value.trim();
+        if (!question) return;
+
+        // Display user's message
+        appendMessage(question, "user");
+        chatInput.value = "";
+
+        // Disable input and show loading indicator
+        setLoading(true);
+
+        try {
+          // --- Send request to the backend ---
+          const response = await fetch(apiUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              question: question,
+              thread_id: threadId, // Send null if it's the first message
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || "An unknown error occurred.");
+          }
+
+          const data = await response.json();
+
+          // Store the thread_id for subsequent messages
+          threadId = data.thread_id;
+
+          // Display agent's response
+          appendMessage(data.answer, "agent");
+        } catch (error) {
+          console.error("Error:", error);
+          appendMessage(`Error: ${error.message}`, "error");
+        } finally {
+          // Re-enable input and hide loading indicator
+          setLoading(false);
+        }
+      });
+
+      /**
+       * Appends a message to the chat window.
+       * @param {string} text - The message text.
+       * @param {string} sender - 'user', 'agent', or 'error'.
+       */
+      function appendMessage(text, sender) {
+        const messageWrapper = document.createElement("div");
+        const messageBubble = document.createElement("div");
+
+        messageBubble.classList.add("chat-bubble", "p-3", "rounded-lg");
+
+        if (sender === "user") {
+          messageWrapper.classList.add("flex", "justify-end");
+          messageBubble.classList.add("bg-indigo-600", "text-white");
+        } else if (sender === "agent") {
+          messageWrapper.classList.add("flex", "justify-start");
+          messageBubble.classList.add("bg-gray-200", "text-gray-800");
+        } else {
+          // error
+          messageWrapper.classList.add("flex", "justify-start");
+          messageBubble.classList.add("bg-red-200", "text-red-800");
+        }
+
+        messageBubble.textContent = text;
+        messageWrapper.appendChild(messageBubble);
+        chatWindow.appendChild(messageWrapper);
+
+        // Scroll to the bottom of the chat window
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+      }
+
+      /**
+       * Manages the UI state while waiting for a response.
+       * @param {boolean} isLoading - True to show loading, false to hide.
+       */
+      function setLoading(isLoading) {
+        const thinkingIndicator = document.getElementById("thinking-indicator");
+
+        if (isLoading) {
+          chatInput.disabled = true;
+          sendButton.disabled = true;
+
+          const indicatorWrapper = document.createElement("div");
+          indicatorWrapper.id = "thinking-indicator";
+          indicatorWrapper.classList.add("flex", "justify-start");
+
+          indicatorWrapper.innerHTML = `
+                    <div class="chat-bubble bg-gray-200 text-gray-500 p-3 rounded-lg thinking-bubble">
+                        <span>Agent is thinking</span>
+                        <div class="dot-flashing"></div>
+                    </div>
+                `;
+          chatWindow.appendChild(indicatorWrapper);
+          chatWindow.scrollTop = chatWindow.scrollHeight;
+        } else {
+          if (thinkingIndicator) {
+            thinkingIndicator.remove();
+          }
+          chatInput.disabled = false;
+          sendButton.disabled = false;
+          chatInput.focus();
+        }
+      }
+    </script>
+  </body>
+</html>
