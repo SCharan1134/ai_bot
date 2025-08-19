@@ -173,7 +173,6 @@ The parts database contains these fields: machine, part_code, name, description,
 - Always present price in Indian Rupees (₹) format
 - Interpret availability status correctly (in stock vs delivery timeframes)
 - Use machine names for compatibility guidance
-- Leverage descriptions for detailed part information
 
 Always maintain a professional, helpful, and procurement-focused tone. Your goal is to help users find the right parts quickly and cost-effectively to minimize machine downtime.
 """

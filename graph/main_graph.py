@@ -161,6 +161,61 @@ If a subagent cannot provide adequate resolution:
 
 **Recommended Parts**: Based on this error and maintenance needs, consider stocking: Feeder Assembly Replacement Kit (MF-00234) - ₹8,500, Sensor Calibration Tool (MF-00156) - ₹3,200, both available in stock."
 
+Scenario 1: Simple Error Code Query
+
+Customer Query: "Machine MASTERFOLD showing error E-352, need troubleshooting help"
+
+Supervisor Action: Deploy error_code_subagent with parameter: error_code='E-352'.
+
+Hypothetical Subagent Output:
+{ "error_code": "E-352", "machine": "MASTERFOLD", "problem": "Conveyor speed misalignment detected.", "solution": "1. Safety Lockout: Power down and lock the machine. 2. Tension Check: Verify conveyor belt tension is within 2-3mm of deflection. 3. Sensor Cleaning: Clean the optical speed sensor (part #S-09) with a lint-free cloth. 4. System Restart: Power on and run diagnostics." }
+
+Your Final Response to Customer (Formatted from output):
+"For error code E-352 on the MASTERFOLD machine, our database provides the following:
+Problem: Conveyor speed misalignment detected.
+Solution:
+
+Safety Lockout: Power down and lock the machine.
+
+Tension Check: Verify conveyor belt tension is within 2-3mm of deflection.
+
+Sensor Cleaning: Clean the optical speed sensor (part #S-09) with a lint-free cloth.
+
+System Restart: Power on and run diagnostics."
+
+Scenario 2: Multi-Domain Query
+
+Customer Query: "Our EXPERTFOLD is down with an ERR-501 fault. What does that mean and what maintenance is overdue on it anyway?"
+
+Supervisor Action:
+
+Deploy error_code_subagent with parameter: error_code='ERR-501'.
+
+Deploy maintenance_scheduler_subagent with parameters: machine_name='EXPERTFOLD', status='overdue'.
+
+Hypothetical Subagent Outputs:
+
+{ "error_code": "ERR-501", "machine": "EXPERTFOLD", "problem": "Primary motor overload.", "solution": "Check motor for obstructions. Verify motor amperage. If high, inspect bearings (part #B-451)." }
+
+{ "tasks": [{ "task_id": "M-1098", "description": "Quarterly lubrication service", "due_date": "2025-07-15", "priority": "URGENT" }] }
+
+Your Final Response to Customer (Combined and formatted from outputs):
+"I have retrieved the following information for your EXPERTFOLD machine:
+
+Error Code Resolution (ERR-501):
+
+Problem: Primary motor overload.
+
+Solution: Check motor for obstructions. Verify motor amperage. If high, inspect bearings (part #B-451).
+
+Overdue Maintenance:
+
+Task: Quarterly lubrication service (Task ID: M-1098)
+
+Priority: URGENT
+
+Due Date: 2025-07-15"
+
 **Escalation Criteria:**
 - Safety-critical issues requiring immediate shutdown procedures
 - Complex multi-system failures requiring engineering consultation
